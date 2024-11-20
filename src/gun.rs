@@ -1,14 +1,15 @@
-use std::f32::consts::TAU;
-
 use bevy::prelude::*;
 
-use crate::{input::PlayerInput, space::Space};
-use rand;
+use crate::{
+    input::{FiringMode, PlayerInput},
+    space::Space,
+    util::solid_angle_sample,
+};
 
 #[derive(Event, Copy, Clone, Debug)]
 pub struct LidarShotFired {
-    origin: Vec3,
-    direction: Dir3,
+    pub origin: Vec3,
+    pub direction: Dir3,
 }
 
 #[derive(Component)]
@@ -29,7 +30,7 @@ impl LidarGun {
     }
 
     pub fn shoot(&mut self) -> usize {
-        let mut num = (self.saved_time_secs * self.fire_rate_per_second).floor();
+        let num = (self.saved_time_secs * self.fire_rate_per_second).floor();
 
         self.saved_time_secs -= num / self.fire_rate_per_second;
         self.saved_time_secs = self.saved_time_secs.max(0.0);
@@ -43,29 +44,30 @@ pub fn lidar_basic_shot_system(
     player_input: Res<PlayerInput>,
     mut shots: EventWriter<LidarShotFired>,
 ) {
-    let delta = time.delta_seconds();
+    match player_input.firing_mode {
+        FiringMode::None => {}
+        FiringMode::Firing => {
+            let delta = time.delta_seconds();
 
-    for (mut lidar_data, transform) in query.get_single_mut() {
-        lidar_data.charge(delta);
-        let origin = transform.translation;
-        // could use base_direction, left, and up instead of compute_matrix and transform_vector3
-        // let base_direction = transform.forward();
+            let Ok((mut lidar_data, transform)) = query.get_single_mut() else {
+                return;
+            };
+            lidar_data.charge(delta);
+            let origin = transform.translation;
+            // could use base_direction, left, and up instead of compute_matrix and transform_vector3
+            // let base_direction = transform.forward();
 
-        let cos = lidar_data.current_angular_spread_radius.cos();
-        for _ in 0..lidar_data.shoot() {
-            // sample and send event
-            let u: f32 = rand::random();
-            let v: f32 = rand::random();
-            let (mut y, mut x) = (TAU * u).sin_cos();
-            let z: f32 = 1.0 + v * (cos - 1.0);
-            let r = (1.0 - z.powi(2)).sqrt();
-            x *= r;
-            y *= r;
-            let dir = Vec3::new(x, y, z);
-            shots.send(LidarShotFired {
-                origin: origin,
-                direction: Dir3::new_unchecked(transform.compute_matrix().transform_vector3(dir)),
-            });
+            for _ in 0..lidar_data.shoot() {
+                // sample and send event
+                let dir = solid_angle_sample(lidar_data.current_angular_spread_radius);
+                shots.send(LidarShotFired {
+                    origin,
+                    direction: Dir3::new_unchecked(
+                        transform.compute_matrix().transform_vector3(dir),
+                    ),
+                });
+            }
         }
+        FiringMode::Burst => todo!(),
     }
 }

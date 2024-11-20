@@ -1,0 +1,4 @@
+(
+    sensitivity: (0.0005, 0.0005),
+    color_distance_scale: 10.0,
+)

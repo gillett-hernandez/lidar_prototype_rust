@@ -13,17 +13,19 @@ pub enum FiringMode {
     Burst,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub enum PressedStatus {
+    #[default]
     NotPressed,
     JustPressed,
     Held,
     JustReleased,
 }
 
-#[derive(Resource)]
+#[derive(Resource, Default, Clone)]
 pub struct PlayerInput {
     pub movement_direction: Vec2,
+    pub elevation: f32,
     pub aim_direction: Vec2,
     pub firing_mode: FiringMode,
     pub fire_trigger: PressedStatus,
@@ -42,6 +44,7 @@ pub fn player_input_system(
     let mut move_direction = Vec2::ZERO;
 
     // TODO: implement gamepad support
+    let mut elevation = 0.0;
 
     for key in keyboard.get_pressed() {
         match key {
@@ -57,9 +60,17 @@ pub fn player_input_system(
             KeyCode::KeyD | KeyCode::ArrowRight => {
                 move_direction.x += 1.0;
             }
+            KeyCode::Space => {
+                elevation += 1.0;
+            }
+            KeyCode::ControlLeft => {
+                elevation -= 1.0;
+            }
             _ => {}
         }
     }
+
+    player_input.elevation = elevation;
 
     if move_direction.length_squared() > 0.0 {
         move_direction = move_direction.normalize();
@@ -114,4 +125,19 @@ pub fn player_input_system(
             _ => {}
         }
     }
+}
+
+pub fn player_firing_sync(mut player_input: ResMut<PlayerInput>) {
+    match player_input.fire_trigger {
+        PressedStatus::NotPressed => player_input.firing_mode = FiringMode::None,
+        PressedStatus::JustPressed => player_input.firing_mode = FiringMode::Firing,
+        PressedStatus::JustReleased => player_input.firing_mode = FiringMode::None,
+        PressedStatus::Held => {}
+    }
+    // match player_input.burst_trigger {
+    //     PressedStatus::NotPressed => todo!(),
+    //     PressedStatus::JustPressed => todo!(),
+    //     PressedStatus::Held => todo!(),
+    //     PressedStatus::JustReleased => todo!(),
+    // }
 }

@@ -3,7 +3,7 @@ use std::f32::consts::{PI, TAU};
 /// unifies mouse input and gamepad input
 use bevy::{input::mouse::MouseMotion, prelude::*};
 
-use crate::settings::GameSettings;
+use crate::settings::UserSettings;
 
 #[derive(Default, Copy, Clone, Debug)]
 pub enum FiringMode {
@@ -39,7 +39,7 @@ pub fn player_input_system(
     keyboard: Res<ButtonInput<KeyCode>>,
     // gamepad_buttons: Res<ButtonInput<GamepadButton>>,
     // gamepad_axis: Res<Axis<GamepadAxis>>,
-    game_settings: Res<GameSettings>,
+    game_settings: Res<UserSettings>,
 ) {
     let mut move_direction = Vec2::ZERO;
 

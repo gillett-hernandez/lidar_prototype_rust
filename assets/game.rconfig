@@ -1,0 +1,6 @@
+(
+    color_distance_factor: 0.0,
+    gun_fire_rate: 1000.0,
+    gun_spread: 0.0,
+    points_limit: None,
+)

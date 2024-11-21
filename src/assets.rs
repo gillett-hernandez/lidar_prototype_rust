@@ -8,7 +8,10 @@ use bevy::{
 use serde::Serialize;
 // use bevy_kira_audio::AudioSource;
 
-use crate::{gamestate::GameState, settings::GameSettings};
+use crate::{
+    gamestate::GameState,
+    settings::{GameSettings, UserSettings},
+};
 
 #[derive(Resource, Deref)]
 pub struct AssetsTracking(pub Vec<UntypedHandle>);
@@ -21,7 +24,8 @@ impl AssetsTracking {
     }
 }
 
-const USER_CONFIG_FILE: &'static str = "user.rconfig";
+const USER_CONFIG_FILE: &'static str = "user.ron";
+const GAME_CONFIG_FILE: &'static str = "game.rconfig";
 
 pub fn load_assets(
     mut commands: Commands,
@@ -58,10 +62,22 @@ pub fn load_assets(
         // will error if the file already exists
         let mut serializer = Serializer::new(file, Some(PrettyConfig::new().depth_limit(4)))
             .expect("couldn't create serializer");
+        let result = UserSettings::default().serialize(&mut serializer);
+        result.expect("could not write to file");
+    }
+
+    let path = Path::new("assets").join(GAME_CONFIG_FILE);
+    if let Ok(file) = std::fs::File::create_new(path) {
+        // will error if the file already exists
+        let mut serializer = Serializer::new(file, Some(PrettyConfig::new().depth_limit(4)))
+            .expect("couldn't create serializer");
         let result = GameSettings::default().serialize(&mut serializer);
         result.expect("could not write to file");
     }
-    let handle: Handle<GameSettings> = asset_server.load(USER_CONFIG_FILE);
+
+    let handle: Handle<UserSettings> = asset_server.load(USER_CONFIG_FILE);
+    loading.add(handle.untyped());
+    let handle: Handle<GameSettings> = asset_server.load(GAME_CONFIG_FILE);
     loading.add(handle.untyped());
     info!("loading {} items", loading.0.len());
 }
@@ -92,9 +108,11 @@ pub fn loading_state_watcher<T: Asset>(
 
 pub fn loading_update(
     mut game_config: ResMut<GameSettings>,
+    mut user_config: ResMut<UserSettings>,
     mut state: ResMut<NextState<GameState>>,
     server: Res<AssetServer>,
     loading: Res<AssetsTracking>,
+    user_config_asset: Res<Assets<UserSettings>>,
     game_config_asset: Res<Assets<GameSettings>>,
 ) {
     // splash screen, loading progress, and transition to main menu
@@ -107,7 +125,11 @@ pub fn loading_update(
             Some(RecursiveDependencyLoadState::Loaded) => {}
             Some(RecursiveDependencyLoadState::Failed) => {
                 let handle_path = handle.path();
-                error!("asset failed to load, {} - {:?}", handle.id().to_string(), handle_path);
+                error!(
+                    "asset failed to load, {} - {:?}",
+                    handle.id().to_string(),
+                    handle_path
+                );
             }
             _ => {
                 all_done = false;
@@ -115,10 +137,19 @@ pub fn loading_update(
         }
     }
     if all_done {
-        *game_config = game_config_asset
+        *user_config = user_config_asset
             .get(
                 server
                     .get_handle(USER_CONFIG_FILE)
+                    .expect("didn't find userconfig file handle in asset server")
+                    .id(),
+            )
+            .expect("didn't find userconfig struct in asset server")
+            .clone();
+        *game_config = game_config_asset
+            .get(
+                server
+                    .get_handle(GAME_CONFIG_FILE)
                     .expect("didn't find config file handle in asset server")
                     .id(),
             )

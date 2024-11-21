@@ -1,3 +1,5 @@
+use bevy::core_pipeline::bloom::BloomSettings;
+use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::prelude::*;
 use bevy::{
     color::palettes::basic::SILVER,
@@ -25,8 +27,8 @@ use gun::{lidar_basic_shot_system, LidarGun, LidarShotFired};
 use input::{player_firing_sync, player_input_system, PlayerInput};
 use pause::PausePlugin;
 use player::{player_movement_system, PlayerBundle};
-use settings::GameSettings;
-use space::{lidar_new_points, LidarTag, Space, SphereHandles, VecStorage};
+use settings::{GameSettings, UserSettings};
+use space::{lidar_new_points, LidarInteractable, LidarTag, Space, SphereHandles, VecStorage};
 
 #[derive(Resource, DerefMut, Deref)]
 pub struct DebugTimer(Timer);
@@ -40,8 +42,6 @@ fn observe_game_state(state: Res<State<GameState>>, debug_timer: Res<DebugTimer>
         dbg!(state.get());
     }
 }
-
-const EXTENSIONS: &[&'static str] = &["rconfig"];
 
 fn setup_meshes(
     mut meshes: ResMut<Assets<Mesh>>,
@@ -57,8 +57,7 @@ fn setup_meshes(
     );
 
     let material = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.5, 0.5, 1.0),
-        unlit: true,
+        emissive: LinearRgba::rgb(3.0, 3.0, 3.0),
         ..default()
     });
     sphere_handles.mesh = Some(shape);
@@ -99,12 +98,21 @@ fn setup_player(mut commands: Commands) {
         .spawn(PlayerBundle::new(SpatialBundle::from_transform(
             Transform::from_xyz(0.0, 0.0, 0.0),
         )))
-        .insert(LidarGun::new(0.01, 100.0))
+        .insert(LidarGun::new(0.01, 1000.0))
         .with_children(|e| {
-            e.spawn(Camera3dBundle {
-                transform: Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::X, Vec3::Y),
-                ..default()
-            });
+            e.spawn((
+                Camera3dBundle {
+                    camera: Camera {
+                        hdr: true, // 1. HDR is required for bloom
+                        ..default()
+                    },
+                    tonemapping: Tonemapping::TonyMcMapface,
+                    transform: Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::X, Vec3::Y),
+
+                    ..default()
+                },
+                BloomSettings::NATURAL,
+            ));
         });
 }
 fn setup_scene(
@@ -126,18 +134,24 @@ fn setup_scene(
     // let actual_material = completely_transparent_material;
     let actual_material = debug_material;
 
-    commands.spawn(PbrBundle {
-        mesh: shape,
-        material: actual_material.clone(),
-        transform: Transform::from_xyz(0.0, 2.0, 0.0),
-        ..default()
-    });
+    commands
+        .spawn(PbrBundle {
+            mesh: shape,
+            material: actual_material.clone(),
+            transform: Transform::from_xyz(0.0, 2.0, 0.0),
+            visibility: Visibility::Hidden,
+            ..default()
+        })
+        .insert(LidarInteractable);
 
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Plane3d::default().mesh().size(50.0, 50.0).subdivisions(10)),
-        material: materials.add(Color::from(SILVER)),
-        ..default()
-    });
+    commands
+        .spawn(PbrBundle {
+            mesh: meshes.add(Plane3d::default().mesh().size(50.0, 50.0).subdivisions(10)),
+            material: materials.add(Color::from(SILVER)),
+            visibility: Visibility::Hidden,
+            ..default()
+        })
+        .insert(LidarInteractable);
 }
 
 pub fn dummy_mainmenu(
@@ -148,6 +162,9 @@ pub fn dummy_mainmenu(
         next_state.set(GameState::InGame);
     }
 }
+
+const USERFILE_EXTENSION: &[&'static str] = &["ron"];
+const CONFIG_FILE_EXTENSION: &[&'static str] = &["rconfig"];
 
 fn main() {
     App::new()
@@ -163,13 +180,15 @@ fn main() {
         .insert_state::<GameState>(GameState::Loading)
         // assets
         .insert_resource(AssetsTracking::new())
-        .add_plugins(RonAssetPlugin::<GameSettings>::new(EXTENSIONS))
+        .add_plugins(RonAssetPlugin::<UserSettings>::new(USERFILE_EXTENSION))
+        .add_plugins(RonAssetPlugin::<GameSettings>::new(CONFIG_FILE_EXTENSION))
         // misc plugins
         .add_plugins(PausePlugin)
         // misc events and resources
         .add_event::<LidarShotFired>()
         .insert_resource(PlayerInput::default())
         .insert_resource(SphereHandles::default())
+        .insert_resource(UserSettings::default())
         .insert_resource(GameSettings::default())
         .insert_resource(GameEndingTimer(Timer::new(
             Duration::from_millis(500),
@@ -178,7 +197,7 @@ fn main() {
         .insert_resource(Space {
             accelerator: VecStorage {
                 points: vec![].into(),
-                limit: 10000,
+                limit: 1000000, // TODO: have this alterable from game_config
             },
         })
         // systems
@@ -187,7 +206,7 @@ fn main() {
             Update,
             (
                 loading_update,
-                loading_state_watcher::<GameSettings>,
+                loading_state_watcher::<UserSettings>,
                 // loading_state_watcher::<Image>,
             )
                 .run_if(in_state(GameState::Loading)),

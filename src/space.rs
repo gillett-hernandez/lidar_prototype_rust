@@ -4,10 +4,11 @@ use bevy_mod_raycast::prelude::*;
 
 use bevy::prelude::*;
 
-use crate::{gun::LidarShotFired, player::Player, settings::GameSettings};
+use crate::{gun::LidarShotFired, player::Player, settings::UserSettings};
 
 pub trait PointStorage {
     fn add_points(&mut self, points: &[Vec3], entities: &[Entity]);
+    fn trim(&mut self) -> Vec<Entity>;
 }
 
 pub struct VecStorage {
@@ -20,10 +21,14 @@ impl PointStorage for VecStorage {
     fn add_points(&mut self, points: &[Vec3], entities: &[Entity]) {
         self.points
             .extend(points.iter().cloned().zip(entities.iter().cloned()));
+    }
+    fn trim(&mut self) -> Vec<Entity> {
         let cur_len = self.points.len();
         if cur_len > self.limit {
             let excess_elements = cur_len - self.limit;
-            self.points.drain(0..excess_elements);
+            self.points.drain(0..excess_elements).map(|e| e.1).collect()
+        } else {
+            vec![]
         }
     }
 }
@@ -37,10 +42,18 @@ impl<S: PointStorage> Space<S> {
     pub fn add_points(&mut self, points: &[Vec3], entities: &[Entity]) {
         self.accelerator.add_points(points, entities);
     }
+    pub fn trim(&mut self) -> Vec<Entity> {
+        self.accelerator.trim()
+    }
 }
 
+/// tag for spheres created by the lidar shot system
 #[derive(Component)]
 pub struct LidarTag;
+
+/// tag for objects that are intersectable by the lidar system
+#[derive(Component)]
+pub struct LidarInteractable;
 
 #[derive(Component)]
 pub struct ColorWrapper(Color);
@@ -56,6 +69,7 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
     mut gizmos: Gizmos,
     mut commands: Commands,
     mut space: ResMut<Space<S>>,
+    filter_query: Query<(), With<LidarInteractable>>,
     mut new_spheres: EventReader<LidarShotFired>,
     sphere_handles: Res<SphereHandles>,
 ) {
@@ -72,11 +86,13 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
     let mut new_entities = Vec::new();
 
     for shot in new_spheres.read() {
-        println!("raycasting lidar shot");
         let result = raycast
             .debug_cast_ray(
                 Ray3d::new(shot.origin, *shot.direction),
-                &default(),
+                &RaycastSettings::default()
+                    .with_visibility(RaycastVisibility::Ignore)
+                    .with_filter(&|e| filter_query.contains(e))
+                    .always_early_exit(),
                 &mut gizmos,
             )
             .first();
@@ -90,22 +106,25 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
                     ..default()
                 })
                 .insert(LidarTag)
-                .with_children(|children| {
-                    children.spawn(PointLightBundle {
-                        point_light: PointLight {
-                            radius: light_radius,
-                            color: Color::srgb(0.2, 0.2, 1.0),
-                            ..default()
-                        },
-                        ..default()
-                    });
-                })
+                // .with_children(|children| {
+                //     children.spawn(PointLightBundle {
+                //         point_light: PointLight {
+                //             radius: light_radius,
+                //             color: Color::srgb(0.2, 0.2, 1.0),
+                //             ..default()
+                //         },
+                //         ..default()
+                //     });
+                // })
                 .id();
             new_points.push(data.position());
             new_entities.push(entity);
         }
     }
     space.add_points(&new_points[..], &new_entities[..]);
+    for entity in space.trim() {
+        commands.entity(entity).despawn_recursive();
+    }
 }
 
 // pub fn propagate_update_colors(parent_query: Query<(Entity, &Children), With<LidarTag>>) {}

@@ -25,6 +25,13 @@ pub struct LidarGun {
 }
 
 impl LidarGun {
+    pub fn new(angular_spread: f32, fire_rate: f32) -> Self {
+        Self {
+            current_angular_spread_radius: angular_spread,
+            fire_rate_per_second: fire_rate,
+            saved_time_secs: 0.0,
+        }
+    }
     pub fn charge(&mut self, time: f32) {
         self.saved_time_secs += time;
     }
@@ -52,7 +59,6 @@ pub fn lidar_basic_shot_system(
             let Ok((mut lidar_data, transform)) = query.get_single_mut() else {
                 return;
             };
-            info!("lidar basic shot system: charging up");
             lidar_data.charge(delta);
             let origin = transform.translation;
             // could use base_direction, left, and up instead of compute_matrix and transform_vector3
@@ -64,7 +70,7 @@ pub fn lidar_basic_shot_system(
                 shots.send(LidarShotFired {
                     origin,
                     direction: Dir3::new_unchecked(
-                        transform.compute_matrix().transform_vector3(dir),
+                        transform.compute_matrix().transform_vector3(dir.zxy()),
                     ),
                 });
             }

@@ -21,7 +21,7 @@ pub mod util;
 use assets::{load_assets, loading_state_watcher, loading_update, AssetsTracking};
 use bevy_common_assets::ron::RonAssetPlugin;
 use gamestate::{game_ending_system, GameEndingTimer, GameState};
-use gun::{lidar_basic_shot_system, LidarShotFired};
+use gun::{lidar_basic_shot_system, LidarGun, LidarShotFired};
 use input::{player_firing_sync, player_input_system, PlayerInput};
 use pause::PausePlugin;
 use player::{player_movement_system, PlayerBundle};
@@ -48,7 +48,13 @@ fn setup_meshes(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut sphere_handles: ResMut<SphereHandles>,
 ) {
-    let shape = meshes.add(Sphere::default().mesh().ico(5).unwrap());
+    let shape = meshes.add(
+        Sphere::default()
+            .mesh()
+            .ico(3)
+            .unwrap()
+            .scaled_by(Vec3::new(0.1, 0.1, 0.1)),
+    );
 
     let material = materials.add(StandardMaterial {
         base_color: Color::srgb(0.5, 0.5, 1.0),
@@ -57,19 +63,6 @@ fn setup_meshes(
     });
     sphere_handles.mesh = Some(shape);
     sphere_handles.material = Some(material);
-}
-
-fn setup_player(mut commands: Commands) {
-    commands
-        .spawn(PlayerBundle::new(SpatialBundle::from_transform(
-            Transform::from_xyz(0.0, 0.0, 0.0),
-        )))
-        .with_children(|e| {
-            e.spawn(Camera3dBundle {
-                transform: Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::X, Vec3::Y),
-                ..default()
-            });
-        });
 }
 
 /// Creates a colorful test pattern
@@ -101,6 +94,19 @@ fn uv_debug_texture() -> Image {
     )
 }
 
+fn setup_player(mut commands: Commands) {
+    commands
+        .spawn(PlayerBundle::new(SpatialBundle::from_transform(
+            Transform::from_xyz(0.0, 0.0, 0.0),
+        )))
+        .insert(LidarGun::new(0.01, 100.0))
+        .with_children(|e| {
+            e.spawn(Camera3dBundle {
+                transform: Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::X, Vec3::Y),
+                ..default()
+            });
+        });
+}
 fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,

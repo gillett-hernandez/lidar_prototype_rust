@@ -25,11 +25,13 @@ pub fn player_movement_system(
     mut query: Query<&mut Transform, With<Player>>,
     player_input: Res<PlayerInput>,
 ) {
-    if let Ok(mut player) = query.get_single_mut() {
-        player.rotate_y(player_input.aim_direction.x);
-        player.rotate_z(player_input.aim_direction.y);
-        player.translation.x += player_input.movement_direction.x;
-        player.translation.y += player_input.movement_direction.y;
-        player.translation.z += player_input.elevation;
+    if let Ok(mut transform) = query.get_single_mut() {
+        transform.rotate_axis(Dir3::Y, -player_input.aim_direction.x);
+
+        transform.rotate_local_z(-player_input.aim_direction.y);
+
+        transform.translation.x += player_input.movement_direction.x;
+        transform.translation.y += player_input.movement_direction.y;
+        transform.translation.z += player_input.elevation;
     }
 }

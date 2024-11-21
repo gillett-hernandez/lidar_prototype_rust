@@ -8,23 +8,25 @@ use bevy::{
 };
 use std::time::Duration;
 
+pub mod assets;
+pub mod gamestate;
+pub mod gun;
+pub mod input;
+pub mod pause;
+pub mod player;
+pub mod settings;
+pub mod space;
+pub mod util;
+
 use assets::{load_assets, loading_state_watcher, loading_update, AssetsTracking};
 use bevy_common_assets::ron::RonAssetPlugin;
 use gamestate::{game_ending_system, GameEndingTimer, GameState};
 use gun::{lidar_basic_shot_system, LidarShotFired};
 use input::{player_firing_sync, player_input_system, PlayerInput};
+use pause::PausePlugin;
 use player::{player_movement_system, PlayerBundle};
 use settings::GameSettings;
 use space::{lidar_new_points, LidarTag, Space, SphereHandles, VecStorage};
-
-pub mod assets;
-pub mod gamestate;
-pub mod gun;
-pub mod input;
-pub mod player;
-pub mod settings;
-pub mod space;
-pub mod util;
 
 #[derive(Resource, DerefMut, Deref)]
 pub struct DebugTimer(Timer);
@@ -64,7 +66,7 @@ fn setup_player(mut commands: Commands) {
         )))
         .with_children(|e| {
             e.spawn(Camera3dBundle {
-                transform: Transform::from_xyz(10.0, 0.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
+                transform: Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::X, Vec3::Y),
                 ..default()
             });
         });
@@ -156,6 +158,8 @@ fn main() {
         // assets
         .insert_resource(AssetsTracking::new())
         .add_plugins(RonAssetPlugin::<GameSettings>::new(EXTENSIONS))
+        // misc plugins
+        .add_plugins(PausePlugin)
         // misc events and resources
         .add_event::<LidarShotFired>()
         .insert_resource(PlayerInput::default())
@@ -183,7 +187,13 @@ fn main() {
                 .run_if(in_state(GameState::Loading)),
         )
         .add_systems(Startup, setup_meshes)
-        .add_systems(OnEnter(GameState::InGame), (setup_player, setup_scene))
+        .add_systems(
+            OnTransition {
+                exited: GameState::MainMenu,
+                entered: GameState::InGame,
+            },
+            (setup_player, setup_scene),
+        )
         .add_systems(
             Update,
             (dummy_mainmenu).run_if(in_state(GameState::MainMenu)),

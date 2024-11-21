@@ -70,7 +70,9 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
 
     let mut new_points = Vec::new();
     let mut new_entities = Vec::new();
+
     for shot in new_spheres.read() {
+        println!("raycasting lidar shot");
         let result = raycast
             .debug_cast_ray(
                 Ray3d::new(shot.origin, *shot.direction),

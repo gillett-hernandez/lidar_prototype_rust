@@ -2,14 +2,24 @@ use bevy::prelude::*;
 
 // use bevy::time::Timer;
 
+// #[derive(Clone, Eq, PartialEq, Debug, Hash, SubStates, Default)]
+// #[source(GameState = GameState::InGame)]
+// pub enum InGameSubstates {
+//     #[default]
+//     Active,
+//     Paused,
+// }
+
+// SubStates
+
 #[allow(dead_code)]
 #[derive(Clone, Eq, PartialEq, Debug, Hash, States, Default)]
 pub enum GameState {
     #[default]
     Loading, // can transition to mainmenu
-    MainMenu,   // can transition to inhanger or ingame (quickstart)
-    InGame,     // can transition to game ending and hitstun
-    Paused,     // can transition to game ending and quitting
+    MainMenu, // can transition to inhanger or ingame (quickstart)
+    InGame,
+    Paused,     // can transition to game ending and hitstun
     GameEnding, // can transition to mainmenu or inhanger
     Quitting,   // quits the game, saving player data to disk and despawning all entities
 }

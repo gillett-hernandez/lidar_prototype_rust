@@ -52,6 +52,7 @@ pub fn lidar_basic_shot_system(
             let Ok((mut lidar_data, transform)) = query.get_single_mut() else {
                 return;
             };
+            info!("lidar basic shot system: charging up");
             lidar_data.charge(delta);
             let origin = transform.translation;
             // could use base_direction, left, and up instead of compute_matrix and transform_vector3

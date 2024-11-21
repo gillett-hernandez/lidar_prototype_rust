@@ -30,8 +30,12 @@ pub fn player_movement_system(
 
         transform.rotate_local_z(-player_input.aim_direction.y);
 
-        transform.translation.x += player_input.movement_direction.x;
-        transform.translation.y += player_input.movement_direction.y;
-        transform.translation.z += player_input.elevation;
+        let x_vec3 = transform.local_x().as_vec3();
+        let z_vec3 = transform.local_z().as_vec3();
+        let movement_speed_factor = 0.02;
+        transform.translation += movement_speed_factor
+            * (x_vec3 * player_input.movement_direction.y
+                + z_vec3 * player_input.movement_direction.x);
+        transform.translation.y += player_input.elevation * movement_speed_factor;
     }
 }

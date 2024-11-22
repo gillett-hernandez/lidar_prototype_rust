@@ -5,12 +5,12 @@ use bevy::{input::mouse::MouseMotion, prelude::*};
 
 use crate::settings::UserSettings;
 
-#[derive(Default, Copy, Clone, Debug)]
+#[derive(Default, Clone, Debug)]
 pub enum FiringMode {
     #[default]
     None, // not firing
     Firing,
-    Burst,
+    Burst(Timer),
 }
 
 #[derive(Copy, Clone, Debug, Default)]
@@ -27,6 +27,7 @@ pub struct PlayerInput {
     pub movement_direction: Vec2,
     pub elevation: f32,
     pub aim_direction: Vec2,
+    pub gun_spread_intent: f32,
     pub firing_mode: FiringMode,
     pub fire_trigger: PressedStatus,
     pub burst_trigger: PressedStatus,
@@ -45,6 +46,7 @@ pub fn player_input_system(
 
     // TODO: implement gamepad support
     let mut elevation = 0.0;
+    let mut gun_spread_intent = 0.0;
 
     for key in keyboard.get_pressed() {
         match key {
@@ -66,11 +68,18 @@ pub fn player_input_system(
             KeyCode::ControlLeft => {
                 elevation -= 1.0;
             }
+            KeyCode::KeyQ => {
+                gun_spread_intent -= 1.0;
+            }
+            KeyCode::KeyE => {
+                gun_spread_intent += 1.0;
+            }
             _ => {}
         }
     }
 
     player_input.elevation = elevation;
+    player_input.gun_spread_intent = gun_spread_intent;
 
     if move_direction.length_squared() > 0.0 {
         move_direction = move_direction.normalize();
@@ -134,10 +143,5 @@ pub fn player_firing_sync(mut player_input: ResMut<PlayerInput>) {
         PressedStatus::JustReleased => player_input.firing_mode = FiringMode::None,
         PressedStatus::Held => {}
     }
-    // match player_input.burst_trigger {
-    //     PressedStatus::NotPressed => todo!(),
-    //     PressedStatus::JustPressed => todo!(),
-    //     PressedStatus::Held => todo!(),
-    //     PressedStatus::JustReleased => todo!(),
-    // }
 }
+

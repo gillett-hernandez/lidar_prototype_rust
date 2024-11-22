@@ -1,8 +1,9 @@
+use std::f32::consts::FRAC_PI_4;
+
 use bevy::prelude::*;
 
 use crate::{
     input::{FiringMode, PlayerInput},
-    space::Space,
     util::solid_angle_sample,
 };
 
@@ -51,7 +52,7 @@ pub fn lidar_basic_shot_system(
     player_input: Res<PlayerInput>,
     mut shots: EventWriter<LidarShotFired>,
 ) {
-    match player_input.firing_mode {
+    match &player_input.firing_mode {
         FiringMode::None => {}
         FiringMode::Firing => {
             let delta = time.delta_seconds();
@@ -69,12 +70,27 @@ pub fn lidar_basic_shot_system(
                 let dir = solid_angle_sample(lidar_data.current_angular_spread_radius);
                 shots.send(LidarShotFired {
                     origin,
-                    direction: Dir3::new_unchecked(
-                        transform.compute_matrix().transform_vector3(dir.zxy()),
-                    ),
+                    direction: Dir3::new(transform.compute_matrix().transform_vector3(dir.zxy()))
+                        .expect("failed to construct direction from sample, should not happen"),
                 });
             }
         }
-        FiringMode::Burst => todo!(),
+        FiringMode::Burst(timer) => todo!(),
+    }
+}
+
+pub fn lidar_spread_sync(mut query: Query<&mut LidarGun>, player_input: Res<PlayerInput>) {
+    let Ok(mut lidar_data) = query.get_single_mut() else {
+        return;
+    };
+
+    if lidar_data.current_angular_spread_radius == 0.0 && player_input.gun_spread_intent > 0.0 {
+        // collapsed to 0, need to fix
+        lidar_data.current_angular_spread_radius = 0.001;
+    } else {
+        lidar_data.current_angular_spread_radius *= 1.01f32.powf(player_input.gun_spread_intent);
+        if lidar_data.current_angular_spread_radius > FRAC_PI_4 {
+            lidar_data.current_angular_spread_radius = FRAC_PI_4;
+        }
     }
 }

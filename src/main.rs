@@ -23,7 +23,7 @@ pub mod util;
 use assets::{load_assets, loading_state_watcher, loading_update, AssetsTracking};
 use bevy_common_assets::ron::RonAssetPlugin;
 use gamestate::{game_ending_system, GameEndingTimer, GameState};
-use gun::{lidar_basic_shot_system, LidarGun, LidarShotFired};
+use gun::{lidar_basic_shot_system, lidar_spread_sync, LidarGun, LidarShotFired};
 use input::{player_firing_sync, player_input_system, PlayerInput};
 use pause::PausePlugin;
 use player::{player_movement_system, PlayerBundle};
@@ -98,7 +98,7 @@ fn setup_player(mut commands: Commands) {
         .spawn(PlayerBundle::new(SpatialBundle::from_transform(
             Transform::from_xyz(0.0, 0.0, 0.0),
         )))
-        .insert(LidarGun::new(0.01, 1000.0))
+        .insert(LidarGun::new(0.01, 100.0))
         .with_children(|e| {
             e.spawn((
                 Camera3dBundle {
@@ -197,7 +197,7 @@ fn main() {
         .insert_resource(Space {
             accelerator: VecStorage {
                 points: vec![].into(),
-                limit: 1000000, // TODO: have this alterable from game_config
+                limit: usize::MAX, // TODO: have this alterable from game_config
             },
         })
         // systems
@@ -232,6 +232,7 @@ fn main() {
                 lidar_basic_shot_system,
                 player_movement_system,
                 player_firing_sync,
+                lidar_spread_sync,
             )
                 .run_if(in_state(GameState::InGame)),
         )

@@ -8,6 +8,8 @@ use bevy::{
         render_resource::{Extent3d, TextureDimension, TextureFormat},
     },
 };
+use iyes_perf_ui::entries::PerfUiBundle;
+use iyes_perf_ui::PerfUiPlugin;
 use std::time::Duration;
 
 pub mod assets;
@@ -130,6 +132,7 @@ fn setup_scene(
     mut images: ResMut<Assets<Image>>, // textures
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    commands.spawn(PerfUiBundle::default());
     let debug_material = materials.add(StandardMaterial {
         base_color_texture: Some(images.add(uv_debug_texture())),
         ..default()
@@ -176,8 +179,8 @@ const USERFILE_EXTENSION: &[&'static str] = &["ron"];
 const CONFIG_FILE_EXTENSION: &[&'static str] = &["rconfig"];
 
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins)
+    let mut app = App::new();
+    app.add_plugins(DefaultPlugins)
         // debug resources and systems
         .insert_resource(DebugTimer(Timer::new(
             Duration::from_millis(500),
@@ -185,6 +188,8 @@ fn main() {
         ))) // debug timer
         .add_systems(Update, debug_timer_ticker)
         .add_systems(Update, observe_game_state)
+        .add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin)
+        .add_plugins(PerfUiPlugin)
         // game state
         .insert_state::<GameState>(GameState::Loading)
         // assets
@@ -248,6 +253,7 @@ fn main() {
         .add_systems(
             Update,
             game_ending_system::<LidarTag>.run_if(in_state(GameState::GameEnding)),
-        )
-        .run();
+        );
+
+    app.run();
 }

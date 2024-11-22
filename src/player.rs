@@ -1,3 +1,5 @@
+use std::f32::consts::FRAC_PI_2;
+
 /// unifies mouse input and gamepad input
 use bevy::prelude::*;
 
@@ -21,6 +23,9 @@ impl PlayerBundle {
     }
 }
 
+const PITCH_LOWER_LIMIT: f32 = -FRAC_PI_2;
+const PITCH_UPPER_LIMIT: f32 = FRAC_PI_2;
+
 pub fn player_movement_system(
     mut query: Query<&mut Transform, With<Player>>,
     player_input: Res<PlayerInput>,
@@ -29,7 +34,12 @@ pub fn player_movement_system(
     if let Ok(mut transform) = query.get_single_mut() {
         transform.rotate_axis(Dir3::Y, -player_input.aim_direction.x);
 
-        transform.rotate_local_z(-player_input.aim_direction.y);
+        let (_, _, pitch) = transform.rotation.to_euler(EulerRot::YXZ);
+        if pitch < PITCH_UPPER_LIMIT && player_input.aim_direction.y < 0.0
+            || pitch > PITCH_LOWER_LIMIT && player_input.aim_direction.y > 0.0
+        {
+            transform.rotate_local_z(-player_input.aim_direction.y);
+        }
 
         let x_vec3 = transform.local_x().as_vec3();
         let z_vec3 = transform.local_z().as_vec3();

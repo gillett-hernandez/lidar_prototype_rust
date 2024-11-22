@@ -103,7 +103,7 @@ fn setup_player(
         .spawn(PlayerBundle::new(SpatialBundle::from_transform(
             Transform::from_xyz(0.0, 0.0, 0.0),
         )))
-        .insert(LidarGun::new(0.01, game_settings.gun_fire_rate))
+        .insert(LidarGun::new(0.4, game_settings.gun_fire_rate))
         .with_children(|e| {
             e.spawn((
                 Camera3dBundle {

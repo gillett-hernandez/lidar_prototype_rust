@@ -23,8 +23,8 @@ impl PlayerBundle {
     }
 }
 
-const PITCH_LOWER_LIMIT: f32 = -FRAC_PI_2;
-const PITCH_UPPER_LIMIT: f32 = FRAC_PI_2;
+const PITCH_LIMIT: f32 = FRAC_PI_2;
+
 
 pub fn player_movement_system(
     mut query: Query<&mut Transform, With<Player>>,
@@ -35,8 +35,8 @@ pub fn player_movement_system(
         transform.rotate_axis(Dir3::Y, -player_input.aim_direction.x);
 
         let (_, _, pitch) = transform.rotation.to_euler(EulerRot::YXZ);
-        if pitch < PITCH_UPPER_LIMIT && player_input.aim_direction.y < 0.0
-            || pitch > PITCH_LOWER_LIMIT && player_input.aim_direction.y > 0.0
+        if pitch < PITCH_LIMIT && player_input.aim_direction.y < 0.0
+            || pitch > -PITCH_LIMIT && player_input.aim_direction.y > 0.0
         {
             transform.rotate_local_z(-player_input.aim_direction.y);
         }

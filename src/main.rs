@@ -37,9 +37,10 @@ fn debug_timer_ticker(time: Res<Time>, mut timer: ResMut<DebugTimer>) {
     timer.tick(time.delta());
 }
 
-fn observe_game_state(state: Res<State<GameState>>, debug_timer: Res<DebugTimer>) {
+fn observe_game_state(space: Res<Space<VecStorage>>, debug_timer: Res<DebugTimer>) {
     if debug_timer.just_finished() {
-        dbg!(state.get());
+        // dbg!(state.get());
+        dbg!(space.accelerator.points.len());
     }
 }
 
@@ -93,12 +94,16 @@ fn uv_debug_texture() -> Image {
     )
 }
 
-fn setup_player(mut commands: Commands) {
+fn setup_player(
+    mut commands: Commands,
+    user_settings: Res<UserSettings>,
+    game_settings: Res<GameSettings>,
+) {
     commands
         .spawn(PlayerBundle::new(SpatialBundle::from_transform(
             Transform::from_xyz(0.0, 0.0, 0.0),
         )))
-        .insert(LidarGun::new(0.01, 100.0))
+        .insert(LidarGun::new(0.01, game_settings.gun_fire_rate))
         .with_children(|e| {
             e.spawn((
                 Camera3dBundle {
@@ -106,6 +111,10 @@ fn setup_player(mut commands: Commands) {
                         hdr: true, // 1. HDR is required for bloom
                         ..default()
                     },
+                    projection: Projection::Perspective(PerspectiveProjection {
+                        fov: user_settings.fov.clamp(45.0, 110.0).to_radians(),
+                        ..default()
+                    }),
                     tonemapping: Tonemapping::TonyMcMapface,
                     transform: Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::X, Vec3::Y),
 

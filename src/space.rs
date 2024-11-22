@@ -66,10 +66,10 @@ pub struct SphereHandles {
 
 pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
     mut raycast: Raycast,
-    mut gizmos: Gizmos,
+    // mut gizmos: Gizmos,
     mut commands: Commands,
     mut space: ResMut<Space<S>>,
-    filter_query: Query<(), With<LidarInteractable>>,
+    filter_query_lidar_interactable: Query<(), With<LidarInteractable>>,
     mut new_spheres: EventReader<LidarShotFired>,
     sphere_handles: Res<SphereHandles>,
 ) {
@@ -84,16 +84,18 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
 
     let mut new_points = Vec::new();
     let mut new_entities = Vec::new();
+    let filter = |e| filter_query_lidar_interactable.contains(e);
+    let settings = RaycastSettings::default()
+        .with_visibility(RaycastVisibility::Ignore)
+        .with_filter(&filter)
+        .always_early_exit();
 
     for shot in new_spheres.read() {
         let result = raycast
-            .debug_cast_ray(
+            .cast_ray(
                 Ray3d::new(shot.origin, *shot.direction),
-                &RaycastSettings::default()
-                    .with_visibility(RaycastVisibility::Ignore)
-                    .with_filter(&|e| filter_query.contains(e))
-                    .always_early_exit(),
-                &mut gizmos,
+                &settings,
+                // &mut gizmos,
             )
             .first();
         if let Some((_entity, data)) = result {

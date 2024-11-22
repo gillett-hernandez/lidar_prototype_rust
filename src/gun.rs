@@ -4,6 +4,7 @@ use bevy::prelude::*;
 
 use crate::{
     input::{FiringMode, PlayerInput},
+    settings::GameSettings,
     util::solid_angle_sample,
 };
 
@@ -79,7 +80,11 @@ pub fn lidar_basic_shot_system(
     }
 }
 
-pub fn lidar_spread_sync(mut query: Query<&mut LidarGun>, player_input: Res<PlayerInput>) {
+pub fn lidar_spread_sync(
+    mut query: Query<&mut LidarGun>,
+    player_input: Res<PlayerInput>,
+    settings: Res<GameSettings>,
+) {
     let Ok(mut lidar_data) = query.get_single_mut() else {
         return;
     };
@@ -89,8 +94,9 @@ pub fn lidar_spread_sync(mut query: Query<&mut LidarGun>, player_input: Res<Play
         lidar_data.current_angular_spread_radius = 0.001;
     } else {
         lidar_data.current_angular_spread_radius *= 1.01f32.powf(player_input.gun_spread_intent);
-        if lidar_data.current_angular_spread_radius > FRAC_PI_4 {
-            lidar_data.current_angular_spread_radius = FRAC_PI_4;
+
+        if lidar_data.current_angular_spread_radius > settings.max_gun_spread {
+            lidar_data.current_angular_spread_radius = settings.max_gun_spread;
         }
     }
 }

@@ -1,7 +1,7 @@
 /// unifies mouse input and gamepad input
 use bevy::prelude::*;
 
-use crate::input::PlayerInput;
+use crate::{input::PlayerInput, settings::GameSettings};
 
 #[derive(Component)]
 pub struct Player;
@@ -24,6 +24,7 @@ impl PlayerBundle {
 pub fn player_movement_system(
     mut query: Query<&mut Transform, With<Player>>,
     player_input: Res<PlayerInput>,
+    settings: Res<GameSettings>,
 ) {
     if let Ok(mut transform) = query.get_single_mut() {
         transform.rotate_axis(Dir3::Y, -player_input.aim_direction.x);
@@ -32,10 +33,10 @@ pub fn player_movement_system(
 
         let x_vec3 = transform.local_x().as_vec3();
         let z_vec3 = transform.local_z().as_vec3();
-        let movement_speed_factor = 0.02;
-        transform.translation += movement_speed_factor
+
+        transform.translation += settings.movement_speed_factor
             * (x_vec3 * player_input.movement_direction.y
                 + z_vec3 * player_input.movement_direction.x);
-        transform.translation.y += player_input.elevation * movement_speed_factor;
+        transform.translation.y += player_input.elevation * settings.movement_speed_factor;
     }
 }

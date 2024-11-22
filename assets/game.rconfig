@@ -1,6 +1,7 @@
 (
     color_distance_factor: 0.0,
     gun_fire_rate: 1000.0,
-    gun_spread: 0.0,
+    max_gun_spread: 0.785398163397448, // PI / 4
+    movement_speed_factor: 0.05,
     points_limit: None,
 )

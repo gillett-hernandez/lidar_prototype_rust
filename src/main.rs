@@ -233,13 +233,15 @@ fn main() {
             (dummy_mainmenu).run_if(in_state(GameState::MainMenu)),
         )
         .add_systems(
+            PreUpdate,
+            player_input_system.run_if(in_state(GameState::InGame)),
+        )
+        .add_systems(
             Update,
             (
                 lidar_new_points::<VecStorage>,
                 player_movement_system,
-                player_input_system,
                 lidar_basic_shot_system,
-                player_movement_system,
                 player_firing_sync,
                 lidar_spread_sync,
             )

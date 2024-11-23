@@ -4,7 +4,9 @@ use bevy_mod_raycast::prelude::*;
 
 use bevy::prelude::*;
 
-use crate::{gun::LidarShotFired, player::Player, settings::UserSettings};
+use crate::{
+    gun::LidarShotFired, material::CustomMaterial, player::Player, settings::UserSettings,
+};
 
 pub trait PointStorage {
     fn add_points(&mut self, points: &[Vec3], entities: &[Entity]);
@@ -61,7 +63,7 @@ pub struct ColorWrapper(Color);
 #[derive(Resource, Default, Clone)]
 pub struct SphereHandles {
     pub mesh: Option<Handle<Mesh>>,
-    pub material: Option<Handle<StandardMaterial>>,
+    pub material: Option<Handle<CustomMaterial>>,
 }
 
 pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
@@ -100,7 +102,7 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
             .first();
         if let Some((_entity, data)) = result {
             let entity = commands
-                .spawn(PbrBundle {
+                .spawn(MaterialMeshBundle {
                     mesh: mesh.clone(),
                     material: material.clone(),
                     transform: Transform::from_translation(data.position())
@@ -129,7 +131,18 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
     }
 }
 
-// pub fn propagate_update_colors(parent_query: Query<(Entity, &Children), With<LidarTag>>) {}
+pub fn propagate_update_colors(
+    mut sphere_query: Query<(&mut Handle<CustomMaterial>, &GlobalTransform), With<LidarTag>>,
+    player_query: Query<&GlobalTransform, With<Player>>,
+) {
+    let Ok(transform) = player_query.get_single() else {
+        return;
+    };
+
+    sphere_query.par_iter_mut().for_each(|(mat, transform)| {
+        // mat.
+    });
+}
 
 // pub fn lidar_sphere_render_manager<S: PointStorage + Send + Sync + 'static>(
 //     space: Res<Space<S>>,

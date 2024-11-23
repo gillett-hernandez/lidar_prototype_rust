@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::core_pipeline::bloom::BloomSettings;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::prelude::*;
@@ -8,14 +10,16 @@ use bevy::{
         render_resource::{Extent3d, TextureDimension, TextureFormat},
     },
 };
+
+use bevy_common_assets::ron::RonAssetPlugin;
 use iyes_perf_ui::entries::PerfUiBundle;
 use iyes_perf_ui::PerfUiPlugin;
-use std::time::Duration;
 
 pub mod assets;
 pub mod gamestate;
 pub mod gun;
 pub mod input;
+pub mod material;
 pub mod pause;
 pub mod player;
 pub mod settings;
@@ -23,10 +27,10 @@ pub mod space;
 pub mod util;
 
 use assets::{load_assets, loading_state_watcher, loading_update, AssetsTracking};
-use bevy_common_assets::ron::RonAssetPlugin;
 use gamestate::{game_ending_system, GameEndingTimer, GameState};
 use gun::{lidar_basic_shot_system, lidar_spread_sync, LidarGun, LidarShotFired};
 use input::{player_firing_sync, player_input_system, PlayerInput};
+use material::CustomMaterial;
 use pause::PausePlugin;
 use player::{player_movement_system, PlayerBundle};
 use settings::{GameSettings, UserSettings};
@@ -48,21 +52,18 @@ fn observe_game_state(space: Res<Space<VecStorage>>, debug_timer: Res<DebugTimer
 
 fn setup_meshes(
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut materials: ResMut<Assets<CustomMaterial>>,
     mut sphere_handles: ResMut<SphereHandles>,
 ) {
     let shape = meshes.add(
         Sphere::default()
             .mesh()
-            .ico(3)
+            .ico(1)
             .unwrap()
             .scaled_by(Vec3::new(0.1, 0.1, 0.1)),
     );
 
-    let material = materials.add(StandardMaterial {
-        emissive: LinearRgba::rgb(3.0, 3.0, 3.0),
-        ..default()
-    });
+    let material = materials.add(CustomMaterial::default());
     sphere_handles.mesh = Some(shape);
     sphere_handles.material = Some(material);
 }
@@ -126,44 +127,54 @@ fn setup_player(
             ));
         });
 }
+
 fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut images: ResMut<Assets<Image>>, // textures
     mut materials: ResMut<Assets<StandardMaterial>>,
+    ass: Res<AssetServer>,
 ) {
     commands.spawn(PerfUiBundle::default());
     let debug_material = materials.add(StandardMaterial {
         base_color_texture: Some(images.add(uv_debug_texture())),
         ..default()
     });
-    let completely_transparent_material = materials.add(StandardMaterial {
-        base_color: Color::srgba(0.0, 0.0, 0.0, 0.0),
-        ..default()
+
+    // note that we have to include the `Scene0` label
+    let scene_gltf = ass.load("main.glb#Scene0");
+
+    // to position our 3d model, simply use the Transform
+    // in the SceneBundle
+    commands.spawn(SceneBundle {
+        scene: scene_gltf,
+        transform: Transform::from_xyz(0.0, 0.0, 0.0),
+        visibility: Visibility::Hidden,
+        ..Default::default()
     });
 
-    let shape = meshes.add(Cuboid::new(5.0, 2.0, 5.0));
+    // let shape = meshes.add(Cuboid::new(5.0, 2.0, 5.0));
     // let actual_material = completely_transparent_material;
-    let actual_material = debug_material;
+    // let actual_material = debug_material;
 
-    commands
-        .spawn(PbrBundle {
-            mesh: shape,
-            material: actual_material.clone(),
-            transform: Transform::from_xyz(0.0, 2.0, 0.0),
-            visibility: Visibility::Hidden,
-            ..default()
-        })
-        .insert(LidarInteractable);
+    // commands
+    //     .spawn(PbrBundle {
+    //         mesh: shape,
+    //         material: actual_material.clone(),
+    //         transform: Transform::from_xyz(0.0, 2.0, 0.0),
+    //         visibility: Visibility::Hidden,
+    //         ..default()
+    //     })
+    //     .insert(LidarInteractable);
 
-    commands
-        .spawn(PbrBundle {
-            mesh: meshes.add(Plane3d::default().mesh().size(50.0, 50.0).subdivisions(10)),
-            material: materials.add(Color::from(SILVER)),
-            visibility: Visibility::Hidden,
-            ..default()
-        })
-        .insert(LidarInteractable);
+    // commands
+    //     .spawn(PbrBundle {
+    //         mesh: meshes.add(Plane3d::default().mesh().size(50.0, 50.0).subdivisions(10)),
+    //         material: materials.add(Color::from(SILVER)),
+    //         visibility: Visibility::Hidden,
+    //         ..default()
+    //     })
+    //     .insert(LidarInteractable);
 }
 
 pub fn dummy_mainmenu(
@@ -211,7 +222,7 @@ fn main() {
         .insert_resource(Space {
             accelerator: VecStorage {
                 points: vec![].into(),
-                limit: usize::MAX, // TODO: have this alterable from game_config
+                limit: 80000, // TODO: have this alterable from game_config
             },
         })
         // systems

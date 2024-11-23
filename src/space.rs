@@ -12,21 +12,20 @@ pub trait PointStorage {
 }
 
 pub struct VecStorage {
-    pub points: VecDeque<(Vec3, Entity)>,
+    pub points: VecDeque<Entity>,
     pub limit: usize,
 }
 
 impl PointStorage for VecStorage {
     /// drops excess points if too many points are added.
-    fn add_points(&mut self, points: &[Vec3], entities: &[Entity]) {
-        self.points
-            .extend(points.iter().cloned().zip(entities.iter().cloned()));
+    fn add_points(&mut self, _: &[Vec3], entities: &[Entity]) {
+        self.points.extend(entities.iter().cloned());
     }
     fn trim(&mut self) -> Vec<Entity> {
         let cur_len = self.points.len();
         if cur_len > self.limit {
             let excess_elements = cur_len - self.limit;
-            self.points.drain(0..excess_elements).map(|e| e.1).collect()
+            self.points.drain(0..excess_elements).collect()
         } else {
             vec![]
         }
@@ -64,6 +63,7 @@ pub struct SphereHandles {
     pub material: Option<Handle<StandardMaterial>>,
 }
 
+// TODO: optimize
 pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
     mut raycast: Raycast,
     // mut gizmos: Gizmos,

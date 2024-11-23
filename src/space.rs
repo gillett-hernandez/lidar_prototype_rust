@@ -4,7 +4,7 @@ use bevy_mod_raycast::prelude::*;
 
 use bevy::prelude::*;
 
-use crate::{gun::LidarShotFired, player::Player, settings::UserSettings};
+use crate::gun::LidarShotFired;
 
 pub trait PointStorage {
     fn add_points(&mut self, points: &[Vec3], entities: &[Entity]);
@@ -55,8 +55,8 @@ pub struct LidarTag;
 #[derive(Component)]
 pub struct LidarInteractable;
 
-#[derive(Component)]
-pub struct ColorWrapper(Color);
+// #[derive(Component)]
+// pub struct ColorWrapper(Color);
 
 #[derive(Resource, Default, Clone)]
 pub struct SphereHandles {

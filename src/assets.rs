@@ -101,7 +101,9 @@ pub fn loading_state_watcher<T: Asset>(
             AssetEvent::LoadedWithDependencies { id } => {
                 info!("asset {} loaded with deps", id.to_string());
             }
-            AssetEvent::Unused { id } => {}
+            AssetEvent::Unused { id } => {
+                warn!("unused asset {}", id.to_string());
+            }
         }
     }
 }

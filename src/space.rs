@@ -4,7 +4,7 @@ use bevy_mod_raycast::prelude::*;
 
 use bevy::prelude::*;
 
-use crate::gun::LidarShotFired;
+use crate::{gun::LidarShotFired, settings::GameSettings};
 
 pub trait PointStorage {
     fn add_points(&mut self, points: &[Vec3], entities: &[Entity]);
@@ -72,6 +72,7 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
     filter_query_lidar_interactable: Query<(), With<LidarInteractable>>,
     mut new_spheres: EventReader<LidarShotFired>,
     sphere_handles: Res<SphereHandles>,
+    game_settings: Res<GameSettings>,
 ) {
     let Some(ref mesh) = sphere_handles.mesh else {
         return;
@@ -86,11 +87,11 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
     let mut new_entities = Vec::new();
     let filter = |e| filter_query_lidar_interactable.contains(e);
     let settings = RaycastSettings::default()
-        .with_visibility(RaycastVisibility::Ignore)
+        .with_visibility(RaycastVisibility::MustBeVisibleAndInView)
         .with_filter(&filter)
         .always_early_exit();
 
-    for shot in new_spheres.read() {
+    for shot in new_spheres.read().take(game_settings.max_shots_per_frame as usize) {
         let result = raycast
             .cast_ray(
                 Ray3d::new(shot.origin, *shot.direction),

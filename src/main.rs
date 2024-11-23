@@ -1,12 +1,9 @@
 use bevy::core_pipeline::bloom::BloomSettings;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::prelude::*;
-use bevy::{
-    color::palettes::basic::SILVER,
-    render::{
-        render_asset::RenderAssetUsages,
-        render_resource::{Extent3d, TextureDimension, TextureFormat},
-    },
+use bevy::render::{
+    render_asset::RenderAssetUsages,
+    render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
 use iyes_perf_ui::entries::PerfUiBundle;
 use iyes_perf_ui::PerfUiPlugin;
@@ -137,16 +134,20 @@ fn setup_scene(
         base_color_texture: Some(images.add(uv_debug_texture())),
         ..default()
     });
+    let completely_transparent_material = materials.add(StandardMaterial {
+        base_color: Color::srgba(0.0, 0.0, 0.0, 0.0),
+        alpha_mode: AlphaMode::Add,
+        ..default()
+    });
     let shape = meshes.add(Cuboid::new(5.0, 2.0, 5.0));
-    // let actual_material = completely_transparent_material;
-    let actual_material = debug_material;
+    let actual_material = completely_transparent_material;
+    // let actual_material = debug_material;
 
     commands
         .spawn(PbrBundle {
             mesh: shape,
             material: actual_material.clone(),
             transform: Transform::from_xyz(0.0, 2.0, 0.0),
-            visibility: Visibility::Hidden,
             ..default()
         })
         .insert(LidarInteractable);
@@ -154,8 +155,7 @@ fn setup_scene(
     commands
         .spawn(PbrBundle {
             mesh: meshes.add(Plane3d::default().mesh().size(50.0, 50.0).subdivisions(10)),
-            material: materials.add(Color::from(SILVER)),
-            visibility: Visibility::Hidden,
+            material: actual_material.clone(),
             ..default()
         })
         .insert(LidarInteractable);

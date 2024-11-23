@@ -15,6 +15,7 @@ pub struct UserSettings {
 pub struct GameSettings {
     pub color_distance_factor: f32,
     pub gun_fire_rate: f32,
+    pub max_shots_per_frame: u32,
     pub max_gun_spread: f32,
     pub movement_speed_factor: f32,
     pub points_limit: Option<usize>,

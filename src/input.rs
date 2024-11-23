@@ -41,6 +41,7 @@ pub fn player_input_system(
     // gamepad_buttons: Res<ButtonInput<GamepadButton>>,
     // gamepad_axis: Res<Axis<GamepadAxis>>,
     game_settings: Res<UserSettings>,
+    time: Res<Time>,
 ) {
     let mut move_direction = Vec2::ZERO;
 
@@ -91,8 +92,8 @@ pub fn player_input_system(
 
     for mouse_movement in mouse_movements.read() {
         let (dtheta, dphi) = (
-            mouse_movement.delta.x * game_settings.sensitivity.x,
-            mouse_movement.delta.y * game_settings.sensitivity.y,
+            mouse_movement.delta.x * game_settings.sensitivity.x * time.delta_seconds(),
+            mouse_movement.delta.y * game_settings.sensitivity.y * time.delta_seconds(),
         );
 
         player_input.aim_direction.x += dtheta;

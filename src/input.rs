@@ -1,4 +1,4 @@
-use std::f32::consts::{PI, TAU};
+use std::f32::consts::TAU;
 
 /// unifies mouse input and gamepad input
 use bevy::{input::mouse::MouseMotion, prelude::*};
@@ -144,4 +144,3 @@ pub fn player_firing_sync(mut player_input: ResMut<PlayerInput>) {
         PressedStatus::Held => {}
     }
 }
-

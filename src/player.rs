@@ -25,7 +25,6 @@ impl PlayerBundle {
 
 const PITCH_LIMIT: f32 = FRAC_PI_2;
 
-
 pub fn player_movement_system(
     mut query: Query<&mut Transform, With<Player>>,
     player_input: Res<PlayerInput>,

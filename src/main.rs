@@ -54,7 +54,7 @@ fn setup_meshes(
     let shape = meshes.add(
         Sphere::default()
             .mesh()
-            .ico(3)
+            .ico(1)
             .unwrap()
             .scaled_by(Vec3::new(0.1, 0.1, 0.1)),
     );
@@ -137,11 +137,6 @@ fn setup_scene(
         base_color_texture: Some(images.add(uv_debug_texture())),
         ..default()
     });
-    let completely_transparent_material = materials.add(StandardMaterial {
-        base_color: Color::srgba(0.0, 0.0, 0.0, 0.0),
-        ..default()
-    });
-
     let shape = meshes.add(Cuboid::new(5.0, 2.0, 5.0));
     // let actual_material = completely_transparent_material;
     let actual_material = debug_material;

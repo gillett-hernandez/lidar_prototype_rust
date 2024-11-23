@@ -1,4 +1,3 @@
-use std::f32::consts::FRAC_PI_4;
 
 use bevy::prelude::*;
 
@@ -76,7 +75,7 @@ pub fn lidar_basic_shot_system(
                 });
             }
         }
-        FiringMode::Burst(timer) => todo!(),
+        FiringMode::Burst(_) => todo!(),
     }
 }
 

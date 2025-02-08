@@ -1,4 +1,4 @@
-use std::f32::consts::{PI, TAU};
+use std::f32::consts::TAU;
 
 /// unifies mouse input and gamepad input
 use bevy::{input::mouse::MouseMotion, prelude::*};
@@ -41,6 +41,7 @@ pub fn player_input_system(
     // gamepad_buttons: Res<ButtonInput<GamepadButton>>,
     // gamepad_axis: Res<Axis<GamepadAxis>>,
     game_settings: Res<UserSettings>,
+    time: Res<Time>,
 ) {
     let mut move_direction = Vec2::ZERO;
 
@@ -91,12 +92,11 @@ pub fn player_input_system(
 
     for mouse_movement in mouse_movements.read() {
         let (dtheta, dphi) = (
-            mouse_movement.delta.x * game_settings.sensitivity.x,
-            mouse_movement.delta.y * game_settings.sensitivity.y,
+            mouse_movement.delta.x * game_settings.sensitivity.x, // * time.delta_seconds(),
+            mouse_movement.delta.y * game_settings.sensitivity.y, // * time.delta_seconds(),
         );
 
         player_input.aim_direction.x += dtheta;
-        player_input.aim_direction.x %= TAU;
         player_input.aim_direction.y += dphi;
         // player_input.aim_direction.y = player_input.aim_direction.y.clamp(0.0, PI);
     }
@@ -144,4 +144,3 @@ pub fn player_firing_sync(mut player_input: ResMut<PlayerInput>) {
         PressedStatus::Held => {}
     }
 }
-

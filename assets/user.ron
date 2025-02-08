@@ -1,5 +1,5 @@
 (
-    sensitivity: (0.0002, 0.0002),
+    sensitivity: (0.001, 0.001),
     color_distance_scale: 10.0,
     fov: 110, // vertical field of view, in degrees, max accepted is 110, min accepted is 70
 )

@@ -4,9 +4,8 @@ use bevy_mod_raycast::prelude::*;
 
 use bevy::prelude::*;
 
-use crate::{
-    gun::LidarShotFired, material::CustomMaterial, player::Player, settings::UserSettings,
-};
+use crate::{gun::LidarShotFired, settings::GameSettings};
+use crate::{material::CustomMaterial, player::Player, settings::UserSettings};
 
 pub trait PointStorage {
     fn add_points(&mut self, points: &[Vec3], entities: &[Entity]);
@@ -14,21 +13,20 @@ pub trait PointStorage {
 }
 
 pub struct VecStorage {
-    pub points: VecDeque<(Vec3, Entity)>,
+    pub points: VecDeque<Entity>,
     pub limit: usize,
 }
 
 impl PointStorage for VecStorage {
     /// drops excess points if too many points are added.
-    fn add_points(&mut self, points: &[Vec3], entities: &[Entity]) {
-        self.points
-            .extend(points.iter().cloned().zip(entities.iter().cloned()));
+    fn add_points(&mut self, _: &[Vec3], entities: &[Entity]) {
+        self.points.extend(entities.iter().cloned());
     }
     fn trim(&mut self) -> Vec<Entity> {
         let cur_len = self.points.len();
         if cur_len > self.limit {
             let excess_elements = cur_len - self.limit;
-            self.points.drain(0..excess_elements).map(|e| e.1).collect()
+            self.points.drain(0..excess_elements).collect()
         } else {
             vec![]
         }
@@ -57,8 +55,8 @@ pub struct LidarTag;
 #[derive(Component)]
 pub struct LidarInteractable;
 
-#[derive(Component)]
-pub struct ColorWrapper(Color);
+// #[derive(Component)]
+// pub struct ColorWrapper(Color);
 
 #[derive(Resource, Default, Clone)]
 pub struct SphereHandles {
@@ -66,6 +64,7 @@ pub struct SphereHandles {
     pub material: Option<Handle<CustomMaterial>>,
 }
 
+// TODO: optimize
 pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
     mut raycast: Raycast,
     // mut gizmos: Gizmos,
@@ -74,6 +73,7 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
     filter_query_lidar_interactable: Query<(), With<LidarInteractable>>,
     mut new_spheres: EventReader<LidarShotFired>,
     sphere_handles: Res<SphereHandles>,
+    game_settings: Res<GameSettings>,
 ) {
     let Some(ref mesh) = sphere_handles.mesh else {
         return;
@@ -88,11 +88,14 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
     let mut new_entities = Vec::new();
     let filter = |e| filter_query_lidar_interactable.contains(e);
     let settings = RaycastSettings::default()
-        .with_visibility(RaycastVisibility::Ignore)
+        .with_visibility(RaycastVisibility::MustBeVisibleAndInView)
         .with_filter(&filter)
         .always_early_exit();
 
-    for shot in new_spheres.read() {
+    for shot in new_spheres
+        .read()
+        .take(game_settings.max_shots_per_frame as usize)
+    {
         let result = raycast
             .cast_ray(
                 Ray3d::new(shot.origin, *shot.direction),

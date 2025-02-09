@@ -7,5 +7,5 @@
 fn fragment(
     mesh: VertexOutput,
 ) -> @location(0) vec4<f32> {
-    return material_color * brightness_factor;
+    return material_color * hue;
 }

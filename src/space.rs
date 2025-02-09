@@ -62,43 +62,6 @@ pub struct SphereHandles {
     pub material: Option<Handle<CustomMaterial>>,
 }
 
-// fn bouncing_raycast(
-//     mut ray_cast: MeshRayCast,
-//     time: Res<Time>,
-//     // The ray map stores rays cast by the cursor
-//     ray_map: Res<RayMap>,
-// ) {
-//     // Cast an automatically moving ray and bounce it off of surfaces
-
-//     // Cast a ray from the cursor and bounce it off of surfaces
-//     for (_, ray) in ray_map.iter() {
-//         bounce_ray(*ray, &mut ray_cast,  Color::from(css::GREEN));
-//     }
-// }
-
-// // Bounces a ray off of surfaces `MAX_BOUNCES` times.
-// fn bounce_ray(mut ray: Ray3d, ray_cast: &mut MeshRayCast, gizmos: &mut Gizmos, color: Color) {
-//     let mut intersections = Vec::with_capacity(MAX_BOUNCES + 1);
-//     intersections.push((ray.origin, Color::srgb(30.0, 0.0, 0.0)));
-
-//     for i in 0..MAX_BOUNCES {
-//         // Cast the ray and get the first hit
-//         let Some((_, hit)) = ray_cast.cast_ray(ray, &RayCastSettings::default()).first() else {
-//             break;
-//         };
-
-//         // Draw the point of intersection and add it to the list
-//         let brightness = 1.0 + 10.0 * (1.0 - i as f32 / MAX_BOUNCES as f32);
-//         intersections.push((hit.point, Color::BLACK.mix(&color, brightness)));
-//         gizmos.sphere(hit.point, 0.005, Color::BLACK.mix(&color, brightness * 2.0));
-
-//         // Reflect the ray off of the surface
-//         ray.direction = Dir3::new(ray.direction.reflect(hit.normal)).unwrap();
-//         ray.origin = hit.point + ray.direction * 1e-6;
-//     }
-//     gizmos.linestrip_gradient(intersections);
-// }
-
 // TODO: optimize more.
 pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
     mut raycast: MeshRayCast,
@@ -122,7 +85,7 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
     let mut new_entities = Vec::new();
     let filter = |e| filter_query_lidar_interactable.contains(e);
     let settings = RayCastSettings::default()
-        .with_visibility(RayCastVisibility::VisibleInView)
+        .with_visibility(RayCastVisibility::Visible)
         .with_filter(&filter)
         .always_early_exit();
 

@@ -159,7 +159,7 @@ fn setup_scene(
         .spawn((
             Mesh3d(shape),
             MeshMaterial3d(actual_material.clone()),
-            Visibility::Hidden,
+            Visibility::Visible,
             Transform::from_xyz(0.0, 2.0, 0.0),
         ))
         .insert(LidarInteractable);
@@ -176,7 +176,7 @@ fn setup_scene(
         .spawn((
             Mesh3d(plane),
             MeshMaterial3d(actual_material.clone()),
-            Visibility::Hidden,
+            Visibility::Visible,
             Transform::from_xyz(0.0, 2.0, 0.0),
         ))
         .insert(LidarInteractable);

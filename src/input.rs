@@ -40,7 +40,6 @@ pub fn player_input_system(
     keyboard: Res<ButtonInput<KeyCode>>,
     // gamepads: Query<(&Name, &Gamepad)>,
     game_settings: Res<UserSettings>,
-    time: Res<Time>,
 ) {
     let mut move_direction = Vec2::ZERO;
 
@@ -138,7 +137,9 @@ pub fn player_input_system(
 pub fn player_firing_sync(mut player_input: ResMut<PlayerInput>) {
     match player_input.fire_trigger {
         PressedStatus::NotPressed => player_input.firing_mode = FiringMode::None,
-        PressedStatus::JustPressed => player_input.firing_mode = FiringMode::Firing,
+        PressedStatus::JustPressed => {
+            player_input.firing_mode = FiringMode::Firing
+        }
         PressedStatus::JustReleased => player_input.firing_mode = FiringMode::None,
         PressedStatus::Held => {}
     }

@@ -11,7 +11,7 @@ pub struct CustomMaterial {
     #[uniform(0)]
     color: LinearRgba,
     #[uniform(1)]
-    player_position: Vec3,
+    hue: f32,
 }
 
 impl Default for CustomMaterial {
@@ -23,7 +23,7 @@ impl Default for CustomMaterial {
                 blue: 1.0,
                 alpha: 1.0,
             },
-            player_position: Vec3::ZERO,
+            hue: 1.0,
         }
     }
 }

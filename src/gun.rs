@@ -55,6 +55,7 @@ pub fn lidar_basic_shot_system(
     match &player_input.firing_mode {
         FiringMode::None => {}
         FiringMode::Firing => {
+
             let delta = time.delta_secs();
 
             let Ok((mut lidar_data, transform)) = query.get_single_mut() else {

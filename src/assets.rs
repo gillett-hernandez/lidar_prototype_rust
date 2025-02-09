@@ -43,19 +43,16 @@ pub fn load_assets(
     //     loading.add(handle.untyped());
     // }
 
-    for audio_path in ["sfx/hit_sound.ogg"] {
-        let handle: Handle<AudioSource> = asset_server.load(audio_path);
-        loading.add(handle.clone().untyped());
-        commands.spawn(AudioBundle {
-            source: handle,
-            settings: PlaybackSettings {
-                volume: bevy::audio::Volume::new(0.1),
-                paused: true,
-                spatial: true,
-                ..default()
-            },
-        });
-    }
+    // for audio_path in [] {
+    //     let handle: Handle<AudioSource> = asset_server.load(audio_path);
+    //     loading.add(handle.clone().untyped());
+    //     commands.spawn((AudioPlayer(handle), PlaybackSettings {
+    //         volume: bevy::audio::Volume::new(0.1),
+    //         paused: true,
+    //         spatial: true,
+    //         ..default()
+    //     }));
+    // }
 
     let path = Path::new("assets").join(USER_CONFIG_FILE);
     if let Ok(file) = std::fs::File::create_new(path) {
@@ -125,12 +122,13 @@ pub fn loading_update(
     for handle in loading.iter() {
         match server.get_load_states(handle.id()).map(|tuple| tuple.2) {
             Some(RecursiveDependencyLoadState::Loaded) => {}
-            Some(RecursiveDependencyLoadState::Failed) => {
+            Some(RecursiveDependencyLoadState::Failed(e)) => {
                 let handle_path = handle.path();
                 error!(
-                    "asset failed to load, {} - {:?}",
+                    "asset failed to load, {} - {:?} - due to {}",
                     handle.id().to_string(),
-                    handle_path
+                    handle_path,
+                    e.to_string()
                 );
             }
             _ => {

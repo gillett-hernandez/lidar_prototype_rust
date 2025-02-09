@@ -10,17 +10,17 @@ fn cursor_grab(mut q_windows: Query<&mut Window, With<PrimaryWindow>>) {
 
     // for a game that doesn't use the cursor (like a shooter):
     // use `Locked` mode to keep the cursor in one place
-    primary_window.cursor.grab_mode = CursorGrabMode::Locked;
+    primary_window.cursor_options.grab_mode = CursorGrabMode::Locked;
 
     // also hide the cursor
-    primary_window.cursor.visible = false;
+    primary_window.cursor_options.visible = false;
 }
 
 fn cursor_ungrab(mut q_windows: Query<&mut Window, With<PrimaryWindow>>) {
     let mut primary_window = q_windows.single_mut();
 
-    primary_window.cursor.grab_mode = CursorGrabMode::None;
-    primary_window.cursor.visible = true;
+    primary_window.cursor_options.grab_mode = CursorGrabMode::None;
+    primary_window.cursor_options.visible = true;
 }
 
 #[derive(Resource, DerefMut, Deref)]
@@ -28,16 +28,15 @@ struct PauseDebounceTimer(Timer);
 
 fn pause_menu_system(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    button_input: Res<ButtonInput<GamepadButton>>,
+    gamepads: Query<(&Name, &Gamepad)>,
     time: Res<Time>,
     mut pause_debounce_timer: ResMut<PauseDebounceTimer>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     let esc_pressed = keyboard_input.just_pressed(KeyCode::Escape);
-    let start_pressed = button_input.just_pressed(GamepadButton {
-        gamepad: Gamepad::new(0),
-        button_type: GamepadButtonType::Start,
-    });
+    let start_pressed = gamepads
+        .iter()
+        .any(|(_, gamepad)| gamepad.just_pressed(GamepadButton::Start));
     if pause_debounce_timer.tick(time.delta()).finished() && (esc_pressed || start_pressed) {
         next_state.set(GameState::InGame);
         pause_debounce_timer.reset();
@@ -46,16 +45,15 @@ fn pause_menu_system(
 
 fn pause_input_handler(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    button_input: Res<ButtonInput<GamepadButton>>,
+    gamepads: Query<(&Name, &Gamepad)>,
     time: Res<Time>,
     mut pause_debounce_timer: ResMut<PauseDebounceTimer>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     let esc_pressed = keyboard_input.just_pressed(KeyCode::Escape);
-    let start_pressed = button_input.just_pressed(GamepadButton {
-        gamepad: Gamepad::new(0),
-        button_type: GamepadButtonType::Start,
-    });
+    let start_pressed = gamepads
+        .iter()
+        .any(|(_, gamepad)| gamepad.just_pressed(GamepadButton::Start));
     if pause_debounce_timer.tick(time.delta()).finished() && (esc_pressed || start_pressed) {
         next_state.set(GameState::Paused);
         pause_debounce_timer.reset();

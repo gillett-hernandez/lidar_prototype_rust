@@ -1,8 +1,6 @@
 use std::collections::VecDeque;
 
-use bevy_mod_raycast::prelude::*;
-
-use bevy::prelude::*;
+use bevy::{math::vec3, picking::backend::ray::RayMap, prelude::*};
 
 use crate::{gun::LidarShotFired, settings::GameSettings};
 use crate::{material::CustomMaterial, player::Player, settings::UserSettings};
@@ -64,10 +62,46 @@ pub struct SphereHandles {
     pub material: Option<Handle<CustomMaterial>>,
 }
 
-// TODO: optimize
+// fn bouncing_raycast(
+//     mut ray_cast: MeshRayCast,
+//     time: Res<Time>,
+//     // The ray map stores rays cast by the cursor
+//     ray_map: Res<RayMap>,
+// ) {
+//     // Cast an automatically moving ray and bounce it off of surfaces
+
+//     // Cast a ray from the cursor and bounce it off of surfaces
+//     for (_, ray) in ray_map.iter() {
+//         bounce_ray(*ray, &mut ray_cast,  Color::from(css::GREEN));
+//     }
+// }
+
+// // Bounces a ray off of surfaces `MAX_BOUNCES` times.
+// fn bounce_ray(mut ray: Ray3d, ray_cast: &mut MeshRayCast, gizmos: &mut Gizmos, color: Color) {
+//     let mut intersections = Vec::with_capacity(MAX_BOUNCES + 1);
+//     intersections.push((ray.origin, Color::srgb(30.0, 0.0, 0.0)));
+
+//     for i in 0..MAX_BOUNCES {
+//         // Cast the ray and get the first hit
+//         let Some((_, hit)) = ray_cast.cast_ray(ray, &RayCastSettings::default()).first() else {
+//             break;
+//         };
+
+//         // Draw the point of intersection and add it to the list
+//         let brightness = 1.0 + 10.0 * (1.0 - i as f32 / MAX_BOUNCES as f32);
+//         intersections.push((hit.point, Color::BLACK.mix(&color, brightness)));
+//         gizmos.sphere(hit.point, 0.005, Color::BLACK.mix(&color, brightness * 2.0));
+
+//         // Reflect the ray off of the surface
+//         ray.direction = Dir3::new(ray.direction.reflect(hit.normal)).unwrap();
+//         ray.origin = hit.point + ray.direction * 1e-6;
+//     }
+//     gizmos.linestrip_gradient(intersections);
+// }
+
+// TODO: optimize more.
 pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
-    mut raycast: Raycast,
-    // mut gizmos: Gizmos,
+    mut raycast: MeshRayCast,
     mut commands: Commands,
     mut space: ResMut<Space<S>>,
     filter_query_lidar_interactable: Query<(), With<LidarInteractable>>,
@@ -87,8 +121,8 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
     let mut new_points = Vec::new();
     let mut new_entities = Vec::new();
     let filter = |e| filter_query_lidar_interactable.contains(e);
-    let settings = RaycastSettings::default()
-        .with_visibility(RaycastVisibility::MustBeVisibleAndInView)
+    let settings = RayCastSettings::default()
+        .with_visibility(RayCastVisibility::VisibleInView)
         .with_filter(&filter)
         .always_early_exit();
 
@@ -98,20 +132,18 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
     {
         let result = raycast
             .cast_ray(
-                Ray3d::new(shot.origin, *shot.direction),
+                Ray3d::new(shot.origin, shot.direction),
                 &settings,
                 // &mut gizmos,
             )
             .first();
         if let Some((_entity, data)) = result {
             let entity = commands
-                .spawn(MaterialMeshBundle {
-                    mesh: mesh.clone(),
-                    material: material.clone(),
-                    transform: Transform::from_translation(data.position())
-                        .with_scale(Vec3::splat(light_radius)),
-                    ..default()
-                })
+                .spawn((
+                    Mesh3d(mesh.clone()),
+                    MeshMaterial3d(material.clone()),
+                    Transform::from_translation(data.point).with_scale(Vec3::splat(light_radius)),
+                ))
                 .insert(LidarTag)
                 // .with_children(|children| {
                 //     children.spawn(PointLightBundle {
@@ -124,7 +156,7 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
                 //     });
                 // })
                 .id();
-            new_points.push(data.position());
+            new_points.push(data.point);
             new_entities.push(entity);
         }
     }
@@ -134,18 +166,18 @@ pub fn lidar_new_points<S: PointStorage + Send + Sync + 'static>(
     }
 }
 
-pub fn propagate_update_colors(
-    mut sphere_query: Query<(&mut Handle<CustomMaterial>, &GlobalTransform), With<LidarTag>>,
-    player_query: Query<&GlobalTransform, With<Player>>,
-) {
-    let Ok(transform) = player_query.get_single() else {
-        return;
-    };
+// pub fn propagate_update_colors(
+//     mut sphere_query: Query<(&mut Handle<CustomMaterial>, &GlobalTransform), With<LidarTag>>,
+//     player_query: Query<&GlobalTransform, With<Player>>,
+// ) {
+//     let Ok(transform) = player_query.get_single() else {
+//         return;
+//     };
 
-    sphere_query.par_iter_mut().for_each(|(mat, transform)| {
-        // mat.
-    });
-}
+//     sphere_query.par_iter_mut().for_each(|(mat, transform)| {
+//         // mat.
+//     });
+// }
 
 // pub fn lidar_sphere_render_manager<S: PointStorage + Send + Sync + 'static>(
 //     space: Res<Space<S>>,

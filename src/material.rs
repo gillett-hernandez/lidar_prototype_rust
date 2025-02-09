@@ -5,7 +5,8 @@ use bevy::{
 
 const SHADER_ASSET_PATH: &'static str = "shaders/custom_material.wgsl";
 
-#[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+
 pub struct CustomMaterial {
     #[uniform(0)]
     color: LinearRgba,

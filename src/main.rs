@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bevy::core_pipeline::bloom::BloomSettings;
+use bevy::core_pipeline::bloom::Bloom;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::prelude::*;
 use bevy::render::{
@@ -9,7 +9,7 @@ use bevy::render::{
 };
 
 use bevy_common_assets::ron::RonAssetPlugin;
-use iyes_perf_ui::entries::PerfUiBundle;
+use iyes_perf_ui::prelude::PerfUiDefaultEntries;
 use iyes_perf_ui::PerfUiPlugin;
 
 pub mod assets;
@@ -29,7 +29,7 @@ use gun::{lidar_basic_shot_system, lidar_spread_sync, LidarGun, LidarShotFired};
 use input::{player_firing_sync, player_input_system, PlayerInput};
 use material::CustomMaterial;
 use pause::PausePlugin;
-use player::{player_movement_system, PlayerBundle};
+use player::{player_movement_system, Player};
 use settings::{GameSettings, UserSettings};
 use space::{lidar_new_points, LidarInteractable, LidarTag, Space, SphereHandles, VecStorage};
 
@@ -100,27 +100,26 @@ fn setup_player(
     game_settings: Res<GameSettings>,
 ) {
     commands
-        .spawn(PlayerBundle::new(SpatialBundle::from_transform(
+        .spawn((
+            Player,
             Transform::from_xyz(0.0, 0.0, 0.0),
-        )))
+            Visibility::Visible,
+        ))
         .insert(LidarGun::new(0.4, game_settings.gun_fire_rate))
         .with_children(|e| {
             e.spawn((
-                Camera3dBundle {
-                    camera: Camera {
-                        hdr: true, // 1. HDR is required for bloom
-                        ..default()
-                    },
-                    projection: Projection::Perspective(PerspectiveProjection {
-                        fov: user_settings.fov.clamp(45.0, 110.0).to_radians(),
-                        ..default()
-                    }),
-                    tonemapping: Tonemapping::TonyMcMapface,
-                    transform: Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::X, Vec3::Y),
-
+                Camera {
+                    hdr: true,
                     ..default()
                 },
-                BloomSettings::NATURAL
+                Camera3d { ..default() },
+                Projection::Perspective(PerspectiveProjection {
+                    fov: user_settings.fov.clamp(45.0, 110.0).to_radians(),
+                    ..default()
+                }),
+                Tonemapping::TonyMcMapface,
+                Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::X, Vec3::Y),
+                Bloom::NATURAL,
             ));
         });
 }
@@ -132,7 +131,7 @@ fn setup_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     ass: Res<AssetServer>,
 ) {
-    commands.spawn(PerfUiBundle::default());
+    commands.spawn(PerfUiDefaultEntries::default());
 
     // note that we have to include the `Scene0` label
     // let scene_gltf = ass.load("main.glb#Scene0");
@@ -157,22 +156,29 @@ fn setup_scene(
     let actual_material = completely_transparent_material;
 
     commands
-        .spawn(PbrBundle {
-            mesh: shape,
-            material: actual_material.clone(),
-            transform: Transform::from_xyz(0.0, 2.0, 0.0),
-            visibility: Visibility::Hidden,
-            ..default()
-        })
+        .spawn((
+            Mesh3d(shape),
+            MeshMaterial3d(actual_material.clone()),
+            Visibility::Hidden,
+            Transform::from_xyz(0.0, 2.0, 0.0),
+        ))
         .insert(LidarInteractable);
 
+    let plane = meshes.add(
+        Plane3d::default()
+            .mesh()
+            .size(50.0, 50.0)
+            .subdivisions(5)
+            .build(),
+    );
+
     commands
-        .spawn(PbrBundle {
-            mesh: meshes.add(Plane3d::default().mesh().size(50.0, 50.0).subdivisions(5)),
-            material: actual_material.clone(),
-            visibility: Visibility::Hidden,
-            ..default()
-        })
+        .spawn((
+            Mesh3d(plane),
+            MeshMaterial3d(actual_material.clone()),
+            Visibility::Hidden,
+            Transform::from_xyz(0.0, 2.0, 0.0),
+        ))
         .insert(LidarInteractable);
 }
 
@@ -190,7 +196,7 @@ const CONFIG_FILE_EXTENSION: &[&'static str] = &["rconfig"];
 
 fn main() {
     let mut app = App::new();
-    app.add_plugins(DefaultPlugins)
+    app.add_plugins((DefaultPlugins, MaterialPlugin::<CustomMaterial>::default()))
         // debug resources and systems
         .insert_resource(DebugTimer(Timer::new(
             Duration::from_millis(500),

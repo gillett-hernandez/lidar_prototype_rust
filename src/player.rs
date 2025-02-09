@@ -8,21 +8,6 @@ use crate::{input::PlayerInput, settings::GameSettings};
 #[derive(Component)]
 pub struct Player;
 
-#[derive(Bundle)]
-pub struct PlayerBundle {
-    player: Player,
-    spatial: SpatialBundle,
-}
-
-impl PlayerBundle {
-    pub fn new(spatial: SpatialBundle) -> Self {
-        PlayerBundle {
-            player: Player,
-            spatial,
-        }
-    }
-}
-
 const PITCH_LIMIT: f32 = FRAC_PI_2 - 0.05;
 
 pub fn player_movement_system(
@@ -32,7 +17,7 @@ pub fn player_movement_system(
     time: Res<Time>,
 ) {
     if let Ok(mut transform) = query.get_single_mut() {
-        let delta_secs = time.delta_seconds();
+        let delta_secs = time.delta_secs();
         transform.rotate_axis(Dir3::Y, -player_input.aim_direction.x);
 
         let (_, _, pitch) = transform.rotation.to_euler(EulerRot::YXZ);

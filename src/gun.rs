@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{ prelude::*};
 
 use crate::{
     input::{FiringMode, PlayerInput},
@@ -6,12 +6,13 @@ use crate::{
     util::solid_angle_sample,
 };
 
+use std::f32::consts::{FRAC_PI_2, PI};
+
 #[derive(Event, Copy, Clone, Debug)]
 pub struct LidarShotFired {
     pub origin: Vec3,
     pub direction: Dir3,
 }
-
 #[derive(Component)]
 
 pub struct LidarGun {
@@ -54,7 +55,7 @@ pub fn lidar_basic_shot_system(
     match &player_input.firing_mode {
         FiringMode::None => {}
         FiringMode::Firing => {
-            let delta = time.delta_seconds();
+            let delta = time.delta_secs();
 
             let Ok((mut lidar_data, transform)) = query.get_single_mut() else {
                 return;

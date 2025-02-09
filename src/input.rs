@@ -38,8 +38,7 @@ pub fn player_input_system(
     mut mouse_movements: EventReader<MouseMotion>,
     mouse_button_input: Res<ButtonInput<MouseButton>>,
     keyboard: Res<ButtonInput<KeyCode>>,
-    // gamepad_buttons: Res<ButtonInput<GamepadButton>>,
-    // gamepad_axis: Res<Axis<GamepadAxis>>,
+    // gamepads: Query<(&Name, &Gamepad)>,
     game_settings: Res<UserSettings>,
     time: Res<Time>,
 ) {

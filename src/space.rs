@@ -6,7 +6,9 @@ use crate::{gun::LidarShotFired, settings::GameSettings};
 use crate::{material::CustomMaterial, player::Player, settings::UserSettings};
 
 pub trait PointStorage {
+    /// method to add points
     fn add_points(&mut self, points: &[Vec3], entities: &[Entity]);
+    /// method that returns entities that should be despawned to adhere to some given point limit.
     fn trim(&mut self) -> Vec<Entity>;
 }
 
@@ -16,7 +18,6 @@ pub struct VecStorage {
 }
 
 impl PointStorage for VecStorage {
-    /// drops excess points if too many points are added.
     fn add_points(&mut self, _: &[Vec3], entities: &[Entity]) {
         self.points.extend(entities.iter().cloned());
     }
@@ -40,6 +41,7 @@ impl<S: PointStorage> Space<S> {
     pub fn add_points(&mut self, points: &[Vec3], entities: &[Entity]) {
         self.accelerator.add_points(points, entities);
     }
+
     pub fn trim(&mut self) -> Vec<Entity> {
         self.accelerator.trim()
     }
